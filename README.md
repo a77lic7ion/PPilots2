@@ -19,6 +19,7 @@ A premium, offline-first 2D SHMUP (Shoot 'Em Up) arcade game featuring retro-mod
 - **Controlled Drop Cadence**: Drops are strictly limited to waves divisible by 4 (`currentWave % 4 === 0`), enhancing pacing and tactical planning.
 - **Elite Drops Convergence**: Retained the guaranteed Veteran/Elite drops, but adapted them to draw strictly from the current wave's curated 2-item pool to enforce thematic gameplay constraints.
 - **Emergency Rescue Drops**: Maintained the emergency drop system separate from the main pool—ensuring that essential HP repairs only trigger dynamically when player health drops below 60%.
+- **Unique Round-Wave Cache Invalidation**: Resolved an issue where the wave-scoped drop pool cached using only `currentWave` as the key. We introduced a compound key (`currentRound * 100 + currentWave`) to ensure the curated pool invalidates correctly on round transitions. This enables higher-tier power-ups (rare, epic, legendary) that unlock in later rounds to appear in wave 4/8 drops instead of being frozen in a state cached from Round 1.
 
 ### 5. Seamless UI/UX Scrolling & Fixed Layouts
 - **Double Scroll Resolution**: Cleaned up conflicting CSS on `#start-screen` and `#settings-screen`. Removing nested container scrolling prevents double scroll locking on mobile and viewport-constrained containers.

@@ -3927,7 +3927,8 @@ function loadProgress() {
         let waveDropPoolFor = -1;
 
         function getWaveDropPool() {
-            if (waveDropPoolFor === currentWave) {
+            const poolKey = currentRound * 100 + currentWave;
+            if (waveDropPoolFor === poolKey) {
                 return waveDropPool;
             }
 
@@ -3942,7 +3943,7 @@ function loadProgress() {
                 waveDropPool.push(avail.splice(idx, 1)[0]);
             }
 
-            waveDropPoolFor = currentWave;
+            waveDropPoolFor = poolKey;
 
             return waveDropPool;
         }
