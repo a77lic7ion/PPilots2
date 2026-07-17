@@ -823,6 +823,139 @@
         .af-popup-stats { display: flex; justify-content: center; gap: 20px; margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); }
         .af-popup-stat { font-family: var(--af-font-mono); font-size: 11px; color: var(--af-text-dim); display: flex; flex-direction: column; align-items: center; gap: 2px; }
         .af-popup-stat span { font-weight: 700; color: var(--af-text); font-size: 16px; }
+
+        /* Daily Challenge System styles */
+        .af-daily-mission {
+            padding: 20px;
+            margin-top: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .af-daily-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .af-daily-title {
+            font-family: var(--af-font-display);
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .af-daily-desc {
+            font-size: 12px;
+            color: var(--af-text-dim);
+            line-height: 1.4;
+            margin: 0;
+        }
+        .af-daily-progress-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 2px;
+        }
+        .af-daily-bar-outer {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .af-daily-bar-inner {
+            height: 100%;
+            background: linear-gradient(90deg, var(--af-primary-bright), var(--af-gold));
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        .af-daily-val {
+            font-family: var(--af-font-mono);
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--af-text);
+            white-space: nowrap;
+        }
+        .af-daily-foot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .af-daily-reward {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: var(--af-font-mono);
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--af-gold);
+        }
+        .af-btn-claim {
+            background: linear-gradient(135deg, var(--af-gold), #FF9800);
+            color: #121214;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-family: var(--af-font-display);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            box-shadow: 0 0 12px rgba(255, 193, 7, 0.4);
+            transition: all 0.2s;
+            animation: pulse-gold 2s infinite alternate;
+        }
+        .af-btn-claim:hover {
+            transform: scale(1.04);
+            box-shadow: 0 0 16px rgba(255, 193, 7, 0.6);
+        }
+        .af-btn-claim:disabled {
+            background: rgba(255, 255, 255, 0.05) !important;
+            color: var(--af-text-dim) !important;
+            cursor: not-allowed;
+            box-shadow: none !important;
+            animation: none !important;
+        }
+        @keyframes pulse-gold {
+            0% { box-shadow: 0 0 8px rgba(255, 193, 7, 0.2); }
+            100% { box-shadow: 0 0 16px rgba(255, 193, 7, 0.6); }
+        }
+
+        .af-toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: linear-gradient(135deg, var(--af-primary), var(--af-surface));
+            border: 2px solid var(--af-gold);
+            border-radius: 12px;
+            padding: 12px 24px;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .af-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        .af-toast-text {
+            font-family: var(--af-font-display);
+            font-size: 13px;
+            font-weight: 700;
+            color: #fff;
+        }
 </style>
 </head>
 <body>
@@ -898,6 +1031,10 @@
                     <span class="af-tag"><span id="ss-fleet-unlocked">5</span> / 5 UNLOCKED</span>
                 </div>
                 <div class="af-fleet-scroll" id="class-select"></div>
+            </section>
+
+            <section class="af-card af-daily-mission" id="daily-mission-card">
+                <!-- Daily Mission content will be rendered dynamically by JS -->
             </section>
 
             <section class="af-actions">
@@ -2819,6 +2956,7 @@ const symFkeys = ['vFormation', 'line', 'diamond', 'wall', 'column', 'chevron'];
             if (boss && boss.state === 'active') { boss.hp -= 10; createParticle(boss.x, boss.y, '#ffea00', 20); }
             player.iFramesUntil = Date.now() + 500;
             updateBombDisplay();
+            updateDailyMissionProgress('use_bombs', 1);
         }
 
         // Audio
@@ -2995,9 +3133,175 @@ const symFkeys = ['vFormation', 'line', 'diamond', 'wall', 'column', 'chevron'];
         function playPowerupSfx(type) { playSfxMp3('powerup_' + type); }
 
         // Persistence
+        const MISSION_TEMPLATES = [
+            { type: 'destroy_enemies', target: 100, title: 'Origami Hunter', desc: 'Destroy 100 Origami enemies to clean up the paper sky.' },
+            { type: 'collect_cores', target: 200, title: 'Core Harvester', desc: 'Gather 200 pilot cores from fallen paper planes.' },
+            { type: 'reach_wave', target: 6, title: 'Wave Surfer', desc: 'Navigate through the turbulent drafts and reach Wave 6 in any round.' },
+            { type: 'use_bombs', target: 5, title: 'Tactical Bomber', desc: 'Unleash your paper folding energy with 5 dynamic bombs.' },
+            { type: 'collect_powerups', target: 8, title: 'Power Overwhelming', desc: 'Fly through the breeze and collect 8 specialized powerups.' },
+            { type: 'survive_time', target: 120, title: 'Survival Expert', desc: 'Keep your wing tips level and survive for 120 seconds in a single flight.' },
+            { type: 'defeat_bosses', target: 2, title: 'Origami Slayer', desc: 'Triumph over 2 mighty paper boss origami folded structures.' }
+        ];
+
+        let dailyMissionState = {
+            date: '',
+            progress: 0,
+            completed: false,
+            claimed: false
+        };
+
+        function getTodayDateString() {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        }
+
+        function getDailyMissionIndexForDate(dateStr) {
+            let hash = 0;
+            for (let i = 0; i < dateStr.length; i++) {
+                hash = (hash << 5) - hash + dateStr.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash) % MISSION_TEMPLATES.length;
+        }
+
+        function updateDailyMission() {
+            const today = getTodayDateString();
+            if (dailyMissionState.date !== today) {
+                dailyMissionState = {
+                    date: today,
+                    progress: 0,
+                    completed: false,
+                    claimed: false
+                };
+                saveProgress();
+            }
+        }
+
+        function renderDailyMissionCard() {
+            updateDailyMission();
+            const cardEl = document.getElementById('daily-mission-card');
+            if (!cardEl) return;
+
+            const idx = getDailyMissionIndexForDate(dailyMissionState.date);
+            const mission = MISSION_TEMPLATES[idx];
+            if (!mission) return;
+
+            const pct = Math.min(100, (dailyMissionState.progress / mission.target) * 100);
+
+            let actionBtnHtml = '';
+            if (dailyMissionState.claimed) {
+                actionBtnHtml = `
+                    <button class="af-btn-claim" disabled>
+                        CLAIMED
+                    </button>
+                `;
+            } else if (dailyMissionState.completed) {
+                actionBtnHtml = `
+                    <button class="af-btn-claim" onclick="claimDailyMissionReward()">
+                        CLAIM +200 CORES
+                    </button>
+                `;
+            } else {
+                actionBtnHtml = `
+                    <button class="af-btn-claim" disabled style="opacity: 0.5;">
+                        +200 CORES
+                    </button>
+                `;
+            }
+
+            cardEl.innerHTML = `
+                <div class="af-daily-head">
+                    <h2 class="af-daily-title">
+                        <svg class="icon icon-fill" viewBox="0 0 24 24" style="color: var(--af-gold); width: 18px; height: 18px;"><path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                        DAILY CHALLENGE
+                    </h2>
+                    <span class="af-tag">TODAY</span>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 4px;">
+                    <p style="font-family: var(--af-font-display); font-size: 14px; font-weight: 700; color: #fff; margin: 0;">${mission.title}</p>
+                    <p class="af-daily-desc">${mission.desc}</p>
+                </div>
+                <div class="af-daily-progress-container">
+                    <div class="af-daily-bar-outer">
+                        <div class="af-daily-bar-inner" style="width: ${pct}%;"></div>
+                    </div>
+                    <span class="af-daily-val">${dailyMissionState.progress} / ${mission.target}</span>
+                </div>
+                <div class="af-daily-foot">
+                    <span class="af-daily-reward">
+                        <svg class="icon icon-fill" viewBox="0 0 24 24" style="color: var(--af-gold); width: 16px; height: 16px;"><path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                        200 CORES REWARD
+                    </span>
+                    ${actionBtnHtml}
+                </div>
+            `;
+        }
+
+        function claimDailyMissionReward() {
+            updateDailyMission();
+            if (!dailyMissionState.completed || dailyMissionState.claimed) return;
+
+            dailyMissionState.claimed = true;
+            totalCores += 200;
+            saveProgress();
+            playSfxMp3('core');
+
+            // Update Start Screen Cores
+            const icEl = document.getElementById('intro-cores');
+            if (icEl) icEl.textContent = totalCores.toLocaleString() + ' CORES';
+
+            renderDailyMissionCard();
+        }
+
+        function updateDailyMissionProgress(type, amount = 1) {
+            if (gameState !== 'playing') return;
+            updateDailyMission();
+            if (dailyMissionState.completed) return;
+
+            const idx = getDailyMissionIndexForDate(dailyMissionState.date);
+            const mission = MISSION_TEMPLATES[idx];
+            if (!mission || mission.type !== type) return;
+
+            if (type === 'reach_wave' || type === 'survive_time') {
+                if (amount > dailyMissionState.progress) {
+                    dailyMissionState.progress = amount;
+                }
+            } else {
+                dailyMissionState.progress += amount;
+            }
+
+            if (dailyMissionState.progress >= mission.target) {
+                dailyMissionState.progress = mission.target;
+                dailyMissionState.completed = true;
+                showDailyToast("Daily Mission Completed!");
+            }
+            saveProgress();
+            renderDailyMissionCard();
+        }
+
+        function showDailyToast(text) {
+            let toast = document.getElementById('daily-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'daily-toast';
+                toast.className = 'af-toast';
+                toast.innerHTML = `
+                    <svg class="icon icon-fill" viewBox="0 0 24 24" style="color: var(--af-gold); width: 20px; height: 20px;"><path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
+                    <span class="af-toast-text" id="daily-toast-msg"></span>
+                `;
+                document.body.appendChild(toast);
+            }
+            document.getElementById('daily-toast-msg').textContent = text;
+            toast.classList.add('show');
+            playSfxMp3('core');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+
         function saveProgress() {
             try {
-                const data = { totalCores, upgrades, unlockedSkins, unlockedClasses, selectedSkin, selectedClass, musicVolume, sfxVolume, padSensitivity, playerName, bgColor, bestRound: bestRound || 1, scrapbookShips: scrapbookShips || [], scrapbookEnemies: scrapbookEnemies || [], scrapbookBosses: scrapbookBosses || [] };
+                const data = { totalCores, upgrades, unlockedSkins, unlockedClasses, selectedSkin, selectedClass, musicVolume, sfxVolume, padSensitivity, playerName, bgColor, bestRound: bestRound || 1, scrapbookShips: scrapbookShips || [], scrapbookEnemies: scrapbookEnemies || [], scrapbookBosses: scrapbookBosses || [], dailyMissionState };
                 if ((gameState === 'playing' || gameState === 'paused') && player) {
                     cachedRun = data.run = {
                         currentRound, currentWave, frameCount,
@@ -3045,6 +3349,12 @@ function loadProgress() {
             scrapbookShips = d.scrapbookShips || [];
             scrapbookEnemies = d.scrapbookEnemies || [];
             scrapbookBosses = d.scrapbookBosses || [];
+            dailyMissionState = d.dailyMissionState || {
+                date: getTodayDateString(),
+                progress: 0,
+                completed: false,
+                claimed: false
+            };
             cachedRun = d.run || null;
             return d.run || null;
         }
@@ -3846,6 +4156,7 @@ function loadProgress() {
                     let val = this.value * (Date.now() < coreOverdriveUntil ? 2 : 1);
                     sessionCores += val;
                     createParticle(this.x, this.y, '#ffea00', 15);
+                    updateDailyMissionProgress('collect_cores', val);
                 }
             }
             draw() {
@@ -3872,6 +4183,7 @@ function loadProgress() {
                     } else {
                         activatePowerUp(this.type);
                     }
+                    updateDailyMissionProgress('collect_powerups', 1);
                 }
             }
             draw() {
@@ -4147,6 +4459,7 @@ function activatePowerUp(type) {
             comboCount = (now - lastKillTime < 2500) ? comboCount + 1 : 1;
             lastKillTime = now;
             updateComboDisplay();
+            updateDailyMissionProgress('destroy_enemies', 1);
         }
         function getComboMultiplier() { return Math.min(5, 1 + Math.floor(comboCount / 3)); }
         function updateComboDisplay() {
@@ -4573,12 +4886,19 @@ function startGame() {
             frameCount++;
             advanceAttackRhythm();
 
+            // Track survive time daily challenge
+            if (startTime) {
+                const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+                updateDailyMissionProgress('survive_time', elapsedSeconds);
+            }
+
             // Wave progression — 30 seconds per wave, then boss (real-time, not frame-based)
             if (!boss) {
                 if (!lastWaveTick) lastWaveTick = Date.now();
                 if (Date.now() - lastWaveTick >= 30000) {
                 lastWaveTick = Date.now();
                 currentWave++;
+                updateDailyMissionProgress('reach_wave', currentWave);
                 randomizeSky();
                 if (currentWave > 10) { // Boss wave
                     enemies = []; enemyBullets = []; waveQueue = [];
@@ -4747,6 +5067,7 @@ function startGame() {
                             if (boss.apexId) unlockScrapbook('bosses', boss.apexId);
                             if (boss.isApex) { legendaryPending = true; }
                             const defeatedRound = currentRound;
+                            updateDailyMissionProgress('defeat_bosses', 1);
                             currentRound++;
                             ascensionLap = getAscensionLap(currentRound);
                             currentWave = 1;
@@ -5099,6 +5420,9 @@ function showStartScreen() {
 
             // Initialize hero ship preview
             renderVesselPreviews();
+
+            // Render Daily Challenge Card
+            renderDailyMissionCard();
 
             // Play background music
             currentMusicState = 'menu';
