@@ -593,7 +593,7 @@
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
+            touch-action: pan-x pan-y;
             overscroll-behavior: contain;
             min-height: 0;
         }
@@ -602,7 +602,7 @@
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
+            touch-action: pan-x pan-y;
             overscroll-behavior: contain;
             min-height: 0;
         }
@@ -973,7 +973,6 @@
             .af-shop-desc { font-size: 10px; margin: 2px 0 6px; }
             .af-btn, .af-btn-secondary { padding: 12px 18px; font-size: 11px; }
             .af-title { font-size: 36px; }
-            .af-skins { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; }
             .af-skin-card { padding: 10px; }
         }
 
@@ -999,6 +998,17 @@
             .af-btn, .af-btn-secondary { padding: 10px 16px; font-size: 11px; }
             .af-row { margin: 6px 0; }
         }
+
+        .af-fleet-scroll, .af-skins {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .af-fleet-scroll img, .af-skins img {
+            -webkit-user-drag: none;
+            user-select: none;
+        }
+
 </style>
 </head>
 <body>
@@ -3096,7 +3106,7 @@ const symFkeys = ['vFormation', 'line', 'diamond', 'wall', 'column', 'chevron'];
         function crossfadeToBoss() {
             if (muted || !currentMusic) return;
             if (bossMusic) { bossMusic.pause(); bossMusic.currentTime = 0; }
-            bossMusic = new Audio('boss_fight.mp3');
+            bossMusic = new Audio('boss_fight.wav');
             bossMusic.loop = true;
             bossMusic.volume = 0;
             bossMusic.play().catch(() => {});
@@ -3127,8 +3137,8 @@ const symFkeys = ['vFormation', 'line', 'diamond', 'wall', 'column', 'chevron'];
         let currentMusicState = 'menu';
         function resumeMusicForState() {
             if (muted) return;
-            if (currentMusicState === 'menu') playMusic('menu_background.mp3');
-            else if (currentMusicState === 'boss') playMusic('boss_fight.mp3');
+            if (currentMusicState === 'menu') playMusic('arcade_shooter_bg_soundtrack1.wav');
+            else if (currentMusicState === 'boss') playMusic('boss_fight.wav');
             else if (currentMusicState === 'gameplay') playRandomGameplayTrack();
         }
         function setMusicVol(val) {
@@ -5314,7 +5324,7 @@ function startGame() {
             ui.waveIndicator.style.display = 'none';
             stopMusic();
         }
-        function showShop() { hideAllScreens(); ui.shop.style.display = 'flex'; updateShopButtons(); currentMusicState = 'menu'; playMusic('menu_background.mp3'); }
+        function showShop() { hideAllScreens(); ui.shop.style.display = 'flex'; updateShopButtons(); currentMusicState = 'menu'; playMusic('arcade_shooter_bg_soundtrack1.wav'); }
 
         function showScrapbook() {
             hideAllScreens();
@@ -5324,7 +5334,7 @@ function startGame() {
             const owned = new Set(unlockedClasses);
             SCRAPBOOK.ships.forEach(s => { if (s.unlockedByDefault || owned.has(s.id)) unlockScrapbook('ships', s.id); });
             renderScrapbook('ships');
-            currentMusicState = 'menu'; playMusic('menu_background.mp3');
+            currentMusicState = 'menu'; playMusic('arcade_shooter_bg_soundtrack1.wav');
         }
 
         function unlockScrapbook(kind, id) {
@@ -5510,7 +5520,7 @@ function showStartScreen() {
 
             // Play background music
             currentMusicState = 'menu';
-            playMusic('menu_background.mp3');
+            playMusic('arcade_shooter_bg_soundtrack1.wav');
 
             // Add scroll event listener for carousel
             const fleetScroll = document.getElementById('class-select');
@@ -5830,15 +5840,60 @@ function syncSelectionUI() {
             });
         }
 
-        // Browsers block audio until the first user gesture — unlock menu music on first tap/click
-        window.addEventListener('pointerdown', function unlockAudio() {
+        // Browsers block audio until the first user gesture
+        const unlockAudio = () => {
             window.removeEventListener('pointerdown', unlockAudio);
-            if (!muted && !currentMusic) resumeMusicForState();
-        });
+            window.removeEventListener('touchstart', unlockAudio);
+            window.removeEventListener('click', unlockAudio);
+            window.removeEventListener('keydown', unlockAudio);
+            if (!muted) {
+                if (currentMusic && currentMusic.paused) currentMusic.play().catch(()=>{});
+                else if (!currentMusic) resumeMusicForState();
+            }
+        };
+        window.addEventListener('pointerdown', unlockAudio);
+        window.addEventListener('touchstart', unlockAudio, { passive: true });
+        window.addEventListener('click', unlockAudio);
+        window.addEventListener('keydown', unlockAudio);
         loadProgress();
         fitViewport();
         showStartScreen();
         window.addEventListener('resize', fitViewport); // (second registration harmless; ensures menu-time resize)
-    </script>
+    
+        // Enable mouse click-and-drag for scrolling to simulate swipe on desktop
+        document.querySelectorAll('.af-fleet-scroll, .af-skins, .af-main, .af-center').forEach(slider => {
+            let isDown = false;
+            let startX, startY;
+            let scrollLeft, scrollTop;
+
+            slider.addEventListener('mousedown', (e) => {
+                isDown = true;
+                slider.style.cursor = 'grabbing';
+                startX = e.pageX - slider.offsetLeft;
+                startY = e.pageY - slider.offsetTop;
+                scrollLeft = slider.scrollLeft;
+                scrollTop = slider.scrollTop;
+            });
+            slider.addEventListener('mouseleave', () => {
+                isDown = false;
+                slider.style.cursor = 'pointer';
+            });
+            slider.addEventListener('mouseup', () => {
+                isDown = false;
+                slider.style.cursor = 'pointer';
+            });
+            slider.addEventListener('mousemove', (e) => {
+                if(!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - slider.offsetLeft;
+                const y = e.pageY - slider.offsetTop;
+                const walkX = (x - startX) * 2;
+                const walkY = (y - startY) * 2;
+                slider.scrollLeft = scrollLeft - walkX;
+                slider.scrollTop = scrollTop - walkY;
+            });
+        });
+
+</script>
 </body>
 </html>

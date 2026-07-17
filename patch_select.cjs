@@ -1,0 +1,12 @@
+const fs = require('fs');
+let html = fs.readFileSync('paper_plane_game.html', 'utf8');
+
+const insertion = `
+        .af-fleet-scroll, .af-skins {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+`;
+
+html = html.replace('</style>', insertion + '</style>');
+fs.writeFileSync('paper_plane_game.html', html);
