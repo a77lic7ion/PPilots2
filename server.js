@@ -11,6 +11,20 @@ const PORT = process.env.PORT || 3000;
 // Serve static files from the root directory
 app.use(express.static(__dirname));
 
+import fs from 'fs';
+
+// API to get background music tracks
+app.get('/api/music-tracks', (req, res) => {
+  fs.readdir(__dirname, (err, files) => {
+    if (err) {
+      return res.status(500).json({ error: 'Failed to read directory' });
+    }
+    const excluded = ['menu_background.mp3', 'boss_fight.mp3'];
+    const tracks = files.filter(f => f.endsWith('.mp3') && !f.startsWith('sfx_') && !excluded.includes(f));
+    res.json(tracks);
+  });
+});
+
 // Fallback to index.html for any other requests
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
