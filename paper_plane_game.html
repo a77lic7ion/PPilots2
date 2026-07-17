@@ -1009,6 +1009,69 @@
             user-select: none;
         }
 
+
+        /* Override flexbox layout to guarantee scrollability */
+        .screen {
+            display: block !important;
+            position: absolute !important;
+            top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+            height: 100% !important;
+        }
+        .af-topbar {
+            position: absolute !important;
+            top: 0 !important; left: 0 !important; width: 100% !important;
+            z-index: 20 !important;
+        }
+        .af-bottomnav {
+            position: absolute !important;
+            z-index: 20 !important;
+        }
+        .screen .af-main, .screen .af-center {
+            position: absolute !important;
+            top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important;
+            width: 100% !important;
+            max-width: 560px !important;
+            margin: 0 auto !important;
+            height: 100% !important;
+            overflow-y: auto !important; /* Force scrollbar */
+            -webkit-overflow-scrolling: touch !important;
+            box-sizing: border-box !important;
+            padding-top: 80px !important;
+            padding-bottom: 120px !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        #start-screen .af-main {
+            padding-top: 24px !important; /* start screen has no topbar */
+        }
+
+
+        /* Force allow touch scrolling */
+        .af-skins, .af-fleet-scroll {
+            touch-action: pan-x !important;
+            -webkit-overflow-scrolling: touch !important;
+            overflow-x: auto !important;
+            pointer-events: auto !important;
+        }
+        .af-skin-card, .af-skin-img-wrap, .af-skin-img {
+            pointer-events: auto !important;
+            touch-action: pan-x pan-y !important;
+        }
+        .screen .af-main, .screen .af-center {
+            touch-action: pan-y !important;
+            -webkit-overflow-scrolling: touch !important;
+            pointer-events: auto !important;
+        }
+        .screen {
+            pointer-events: auto !important;
+            touch-action: auto !important;
+        }
+
+
+        .screen .af-main > *, .screen .af-center > * {
+            flex-shrink: 0 !important;
+        }
+
 </style>
 </head>
 <body>
@@ -5861,12 +5924,13 @@ function syncSelectionUI() {
         window.addEventListener('resize', fitViewport); // (second registration harmless; ensures menu-time resize)
     
         // Enable mouse click-and-drag for scrolling to simulate swipe on desktop
-        document.querySelectorAll('.af-fleet-scroll, .af-skins, .af-main, .af-center').forEach(slider => {
+        document.querySelectorAll('.af-fleet-scroll, .af-skins').forEach(slider => {
             let isDown = false;
             let startX, startY;
             let scrollLeft, scrollTop;
 
-            slider.addEventListener('mousedown', (e) => {
+            slider.addEventListener('pointerdown', (e) => {
+                if(e.pointerType !== 'mouse') return;
                 isDown = true;
                 slider.style.cursor = 'grabbing';
                 startX = e.pageX - slider.offsetLeft;
@@ -5874,25 +5938,32 @@ function syncSelectionUI() {
                 scrollLeft = slider.scrollLeft;
                 scrollTop = slider.scrollTop;
             });
-            slider.addEventListener('mouseleave', () => {
+            slider.addEventListener('pointerleave', (e) => {
+                if(e.pointerType !== 'mouse') return;
                 isDown = false;
                 slider.style.cursor = 'pointer';
             });
-            slider.addEventListener('mouseup', () => {
+            slider.addEventListener('pointerup', (e) => {
+                if(e.pointerType !== 'mouse') return;
                 isDown = false;
                 slider.style.cursor = 'pointer';
             });
-            slider.addEventListener('mousemove', (e) => {
-                if(!isDown) return;
+            slider.addEventListener('pointermove', (e) => {
+                if(!isDown || e.pointerType !== 'mouse') return;
                 e.preventDefault();
                 const x = e.pageX - slider.offsetLeft;
-                const y = e.pageY - slider.offsetTop;
                 const walkX = (x - startX) * 2;
-                const walkY = (y - startY) * 2;
                 slider.scrollLeft = scrollLeft - walkX;
-                slider.scrollTop = scrollTop - walkY;
             });
         });
+
+
+        setInterval(() => {
+            const m = document.querySelector('#start-screen .af-main');
+            if(m && m.parentElement.style.display !== 'none') {
+                console.log('Main SCROLL:', m.scrollHeight, m.clientHeight, 'Screen height:', m.parentElement.clientHeight, 'Wrapper:', document.getElementById('game-wrapper').clientHeight);
+            }
+        }, 2000);
 
 </script>
 </body>
