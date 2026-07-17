@@ -1,0 +1,8 @@
+{
+  "name": "Paper Planes: Origami Elite",
+  "description": "An intense, high-fidelity paper plane bullet hell game with dynamic weapon evolutions, bosses, and responsive visual design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
