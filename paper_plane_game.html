@@ -23,6 +23,8 @@
             position: fixed; top: 0; left: 0;
             overflow: hidden;
             transform: translate(0, 0); /* Makes this the containing block for position: fixed */
+            container-type: size;
+            container-name: game;
             /* dimensions set by fitViewport() */
         }
         canvas { display: block; touch-action: none; }
@@ -122,7 +124,6 @@
             z-index: 100; color: white; text-align: center;
             overflow-y: auto; overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
             overscroll-behavior: contain;
         }
 
@@ -593,9 +594,8 @@
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             touch-action: pan-y;
+            overscroll-behavior: contain;
             min-height: 0;
-            height: 100%;
-            max-height: 100%;
         }
         .screen .af-center {
             flex: 1 1 auto;
@@ -603,6 +603,7 @@
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
             touch-action: pan-y;
+            overscroll-behavior: contain;
             min-height: 0;
         }
         #start-screen, #shop-screen, #settings-screen, #game-over-screen, #wave-upgrade-screen, #pause-screen { background: var(--af-bg); }
@@ -632,25 +633,19 @@
             width: 100%;
             max-width: 560px;
             margin: 0 auto;
-            padding: 84px 20px 120px;
+            padding: 84px 20px 24px;
             display: flex;
             flex-direction: column;
             gap: 28px;
             box-sizing: border-box;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
-            height: 100%;
-            max-height: 100%;
         }
-
-        #shop-screen .af-main,
-        #settings-screen .af-main {
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            touch-action: pan-y;
-            height: 100%;
-            max-height: 100%;
+        .af-main::after {
+            content: '';
+            display: block;
+            min-height: 120px;
+            flex-shrink: 0;
         }
 
         .af-card { background: var(--af-surface); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--af-border); border-radius: var(--af-radius); }
@@ -758,7 +753,13 @@
         html { overflow: hidden; height: 100%; }
         body { height: 100%; }
 
-        .af-center { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 80px 24px 120px; text-align: center; box-sizing: border-box; }
+        .af-center { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 80px 24px 24px; text-align: center; box-sizing: border-box; }
+        .af-center::after {
+            content: '';
+            display: block;
+            min-height: 120px;
+            flex-shrink: 0;
+        }
         .af-title { font-family: var(--af-font-display); font-size: 44px; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
         .af-sub { font-family: var(--af-font-mono); font-size: 18px; color: var(--af-text-dim); margin: 0; }
         .af-panel { background: var(--af-surface); border: 1px solid var(--af-border); border-radius: 14px; padding: 18px 26px; min-width: 300px; box-sizing: border-box; }
@@ -955,6 +956,48 @@
             font-size: 13px;
             font-weight: 700;
             color: #fff;
+        }
+
+        /* Responsive Scaling for Mobile App Feel */
+        @container game (max-height: 800px) {
+            .af-main { padding: 70px 16px 16px; gap: 16px; }
+            .af-main::after { min-height: 90px; }
+            .af-center { padding: 70px 16px 16px; gap: 12px; }
+            .af-center::after { min-height: 90px; }
+            .af-card { padding: 14px !important; }
+            .af-field { margin-bottom: 12px; }
+            .af-section-title h2 { font-size: 20px; }
+            .af-shop-card { padding: 12px; gap: 12px; }
+            .af-shop-icon { width: 36px; height: 36px; }
+            .af-shop-title { font-size: 13px; }
+            .af-shop-desc { font-size: 10px; margin: 2px 0 6px; }
+            .af-btn, .af-btn-secondary { padding: 12px 18px; font-size: 11px; }
+            .af-title { font-size: 36px; }
+            .af-skins { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; }
+            .af-skin-card { padding: 10px; }
+        }
+
+        @container game (max-height: 660px) {
+            .af-main { padding: 56px 12px 10px; gap: 10px; }
+            .af-main::after { min-height: 70px; }
+            .af-center { padding: 56px 12px 10px; gap: 10px; }
+            .af-center::after { min-height: 70px; }
+            .af-card { padding: 10px !important; }
+            .af-topbar { height: 50px; padding: 0 12px; }
+            .af-bottomnav { height: 56px; bottom: 12px; padding: 0 6px; }
+            .af-nav-btn { padding: 6px 14px; font-size: 9px; }
+            .af-nav-btn .icon { width: 18px; height: 18px; }
+            .af-section-title h2 { font-size: 18px; }
+            .af-shop-title { font-size: 12px; }
+            .af-shop-desc { font-size: 9px; margin: 2px 0 4px; }
+            .af-shop-icon { width: 30px; height: 30px; }
+            .af-field { margin-bottom: 8px; }
+            .af-field-label { font-size: 10px; margin-bottom: 4px; }
+            .af-input { padding: 8px 10px; font-size: 12px; }
+            .af-title { font-size: 28px; }
+            .af-sub { font-size: 14px; }
+            .af-btn, .af-btn-secondary { padding: 10px 16px; font-size: 11px; }
+            .af-row { margin: 6px 0; }
         }
 </style>
 </head>
